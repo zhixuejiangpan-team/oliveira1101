@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4a5cf0">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:,">
 <title>oliveira</title>
 <style>
@@ -19,7 +21,7 @@
   --red-bg:#2a1a1c; --red-tx:#fca5a5; --amber-bg:#26200f; --amber-tx:#fcd34d;
   --blue-bg:#131c2e; --blue-tx:#93c5fd; --pink-bg:#281722; --pink-tx:#f9a8d4;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{font-family:-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--txt);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
 button{font:inherit;cursor:pointer}
@@ -86,6 +88,7 @@ h4{margin:18px 0 8px;font-size:14px}
 .banner.warn{background:var(--amber-bg);color:var(--amber-tx)}
 .banner.event{background:var(--blue-bg);color:var(--blue-tx)}
 .banner.proj{background:var(--pink-bg);color:var(--pink-tx)}
+.banner span{overflow-wrap:anywhere;flex:1;min-width:0}
 
 .tasklist{display:flex;flex-direction:column}
 .task{display:flex;gap:12px;padding:11px 2px;border-bottom:1px dashed var(--line);align-items:flex-start}
@@ -94,7 +97,7 @@ h4{margin:18px 0 8px;font-size:14px}
 .chk:hover{border-color:var(--accent)}
 .task.done .chk{background:var(--accent);border-color:var(--accent);color:#fff}
 .taskbody{flex:1;min-width:0}
-.taskx{font-size:14px}
+.taskx{font-size:14px;overflow-wrap:anywhere}
 .task.done .taskx{color:var(--sub);text-decoration:line-through}
 .taskmeta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:var(--sub);margin-top:3px}
 .tag{font-size:12px;flex-shrink:0}
@@ -117,13 +120,13 @@ table.tt{width:100%;border-collapse:collapse;min-width:780px;font-size:12.5px}
 table.tt th,table.tt td{border:1px solid var(--line);padding:5px 7px;vertical-align:middle}
 table.tt thead th{background:var(--bg);font-weight:600;padding:9px 6px;font-size:13px}
 table.tt thead small{display:block;font-weight:400;color:var(--sub);font-size:11px}
-td.pt{width:78px;text-align:center;color:var(--sub);background:var(--bg);font-size:11.5px}
+td.pt{width:78px;text-align:center;color:var(--sub);background:var(--bg);font-size:11.5px;position:sticky;left:0;z-index:2}
 td.pt b{display:block;color:var(--txt);font-size:12px;font-weight:600}
 td.pt small{display:block;color:var(--accent);font-size:10.5px;margin-top:2px}
 td.em{background:transparent}
 td.cls{background:var(--card)}
 .c{padding:2px 1px}
-.c b{display:block;font-size:12.5px;line-height:1.3}
+.c b{display:block;font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}
 .c span{display:block;color:var(--sub);font-size:11px;margin:1px 0}
 .c small{display:block;color:var(--sub);font-size:10.5px}
 .c em{display:block;color:var(--amber-tx);font-size:10.5px;font-style:normal;margin-top:2px}
@@ -224,20 +227,61 @@ table.grid td:first-child{color:var(--sub)}
 .cl span{color:var(--sub)}
 .cl small{margin-left:auto;color:var(--sub);white-space:nowrap}
 
+/* ===== 时间分组 ===== */
+.secthead{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--sub);background:var(--bg);border-radius:9px;padding:7px 12px;margin:12px 0 2px;font-weight:600}
+.secthead span{font-weight:400;font-size:11.5px}
+
+/* ===== 账户 ===== */
+.acct{display:flex;flex-direction:column;gap:14px}
+.acct .steps{padding-left:20px;margin:8px 0}
+.acct .steps li{margin:4px 0;font-size:13px;color:var(--sub)}
+.acct .steps b{color:var(--txt)}
+.patrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.patrow input{flex:1;min-width:220px;font-family:Consolas,Menlo,monospace;font-size:13px}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border-radius:999px;padding:4px 12px;border:1px solid var(--line);color:var(--sub)}
+.status.ok{color:var(--ok);border-color:#bbf7d0;background:#f0fdf4}
+.status.err{color:var(--red-tx);border-color:#fecaca;background:var(--red-bg)}
+[data-theme=dark] .status.ok{background:#0e2a1a;border-color:#1f5136}
+.avrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.avrow .av{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+.gridwrap{overflow-x:auto}
+
 @media (max-width:860px){
   .shell{flex-direction:column}
   .side{width:100%;height:auto;position:static;flex-direction:column;padding:14px 16px}
   .brand{padding-bottom:10px}
-  .nav{flex-direction:row;overflow-x:auto}
-  .side-foot{flex-direction:row;align-items:center;padding-top:10px;gap:12px}
-  main{padding:16px 14px 60px}
+  .nav{flex-direction:row;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .side-foot{flex-direction:row;align-items:center;padding-top:10px;gap:12px;flex-wrap:wrap}
+  main{padding:16px 14px 70px}
+  .top{flex-direction:column;align-items:stretch;gap:10px}
+  .chips{justify-content:flex-start;max-width:none}
   .row{flex-direction:column}
   .ringcard{flex-direction:row;gap:18px;min-width:0}
-  .weekgrid{grid-template-columns:repeat(7,minmax(58px,1fr));overflow-x:auto}
+  .ringsvg{width:104px;height:104px}
+  .chk{width:28px;height:28px;font-size:13px;margin-top:0}
+  .task{padding:12px 0;gap:10px}
+  .mini{padding:4px 8px;margin:-2px 0}
+  .addrow #newx{flex:1 1 100%}
+  .addrow select{flex:1;min-width:110px}
+  .addrow #newm{width:70px}
+  .weekgrid{display:flex;overflow-x:auto;padding-bottom:6px}
+  .daycard{min-width:82px;flex:1}
+  .daybars{overflow-x:auto;padding-bottom:4px}
+  .daybarcol{min-width:44px}
   .statgrid{grid-template-columns:1fr}
   .wggrid{grid-template-columns:repeat(2,1fr)}
   .goals{grid-template-columns:repeat(2,1fr)}
+  .cl{flex-wrap:wrap}
   .cl b{min-width:90px}
+  .cl small{margin-left:0;width:100%}
+  .totals{gap:14px}
+  .tblwrap{margin:0 -4px}
+  .patrow input{min-width:100%}
+}
+@media (max-width:400px){
+  .goals{grid-template-columns:1fr}
+  .wggrid{grid-template-columns:1fr 1fr}
+  .daynav{gap:8px}
 }
 </style>
 </head>
@@ -251,6 +295,7 @@ table.grid td:first-child{color:var(--sub)}
       <button class="tab" data-act="tab|week">📆 本周</button>
       <button class="tab" data-act="tab|stats">📊 统计</button>
       <button class="tab" data-act="tab|plan">🧭 计划</button>
+      <button class="tab" data-act="tab|acct">👤 账户</button>
     </nav>
     <div class="side-foot">
       <div class="streak">🔥 连续打卡 <b id="streakN">0</b> 天</div>
@@ -436,11 +481,137 @@ const weekNum=ds=>7+Math.floor(diffDays('2026-10-19',ds)/7);
 
 /* ================= 状态 ================= */
 function load(){try{const r=localStorage.getItem(LS);return r?JSON.parse(r):null}catch(e){return null}}
-function save(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
+function persistRaw(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
+function save(){persistRaw();scheduleSync();}
 let state=load()||{checks:{},word:{},custom:{},notes:{},admin:{},dark:false};
+if(!state.sync)state.sync=null;
 let viewDate=new Date();
 let tab='today';
+let syncTimer=null;
 const noteOpen=new Set();
+
+/* ================= 云端同步（GitHub Gist · 无服务器） ================= */
+const GIST_DESC='oliveira-study-data-v1';
+const ghFetch=(url,opt)=>{
+  const f=typeof fetch==='function'?fetch:()=>Promise.reject(new Error('当前环境不支持网络请求'));
+  return f(url,opt);
+};
+async function ghApi(path,opts){
+  const s=state.sync||{};
+  opts=opts||{};
+  const headers=Object.assign({'Authorization':'token '+s.token,'Accept':'application/vnd.github+json'},opts.headers||{});
+  const r=await ghFetch('https://api.github.com'+path,Object.assign({},opts,{headers}));
+  if(!r.ok) throw new Error(r.status===401?'Token 无效或未勾选 gist 权限':('GitHub 请求失败 '+r.status));
+  return r.json();
+}
+async function ensureGist(){
+  const s=state.sync||{};
+  if(s.gistId)return s.gistId;
+  for(let page=1;page<=3;page++){
+    const list=await ghApi('/gists?per_page=100&page='+page);
+    const found=(list||[]).find(g=>g.description===GIST_DESC);
+    if(found){s.gistId=found.id;persistRaw();return found.id;}
+    if((list||[]).length<100)break;
+  }
+  const created=await ghApi('/gists',{method:'POST',body:JSON.stringify({description:GIST_DESC,public:false,files:{'oliveira-data.json':{content:JSON.stringify({app:'oliveira',v:1,ts:0,data:{checks:{},word:{},custom:{},notes:{},admin:{}}})}}})});
+  s.gistId=created.id;persistRaw();return created.id;
+}
+function mergeData(a,b){
+  const out={checks:{},word:{},custom:{},notes:{},admin:{}};
+  const d1=a.checks||{},d2=b.checks||{};
+  new Set([...Object.keys(d1),...Object.keys(d2)]).forEach(ds=>{
+    out.checks[ds]={};
+    const c1=d1[ds]||{},c2=d2[ds]||{};
+    new Set([...Object.keys(c1),...Object.keys(c2)]).forEach(id=>{
+      const x=c1[id],y=c2[id];
+      out.checks[ds][id]=x&&y?((y.t||0)>(x.t||0)?y:x):(x||y);
+    });
+  });
+  GROUPS.forEach(g=>{
+    const x=(a.word||{})[g.name],y=(b.word||{})[g.name];
+    if(x&&y)out.word[g.name]=y>x?y:x;
+    else if(x||y)out.word[g.name]=x||y;
+  });
+  new Set([...Object.keys(a.custom||{}),...Object.keys(b.custom||{})]).forEach(ds=>{
+    const list=(a.custom[ds]||[]).slice().concat((b.custom[ds]||[]).slice());
+    const seen={};
+    out.custom[ds]=list.filter(c=>{if(seen[c.id])return false;seen[c.id]=1;return true;});
+  });
+  new Set([...Object.keys(a.notes||{}),...Object.keys(b.notes||{})]).forEach(ds=>{
+    out.notes[ds]=(a.notes&&a.notes[ds])||(b.notes&&b.notes[ds])||'';
+  });
+  new Set([...Object.keys(a.admin||{}),...Object.keys(b.admin||{})]).forEach(wk=>{
+    out.admin[wk]=Math.max(a.admin[wk]||0,b.admin[wk]||0);
+  });
+  return out;
+}
+function curData(){return {checks:state.checks,word:state.word,custom:state.custom,notes:state.notes,admin:state.admin};}
+async function pushCloud(){
+  const s=state.sync||{};
+  if(!s.token)return;
+  try{
+    const id=await ensureGist();
+    const envelope={app:'oliveira',v:1,ts:Date.now(),data:curData()};
+    await ghApi('/gists/'+id,{method:'PATCH',body:JSON.stringify({files:{'oliveira-data.json':{content:JSON.stringify(envelope)}}})});
+    s.lastSync=Date.now();
+    s.status='已同步 '+new Date(s.lastSync).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    persistRaw();
+  }catch(e){
+    s.status='同步失败：'+(e.message||e);
+    persistRaw();
+  }
+}
+async function syncNow(){
+  const s=state.sync||{};
+  if(!s.token)return;
+  s.status='同步中…';persistRaw();render();
+  try{
+    const id=await ensureGist();
+    const g=await ghApi('/gists/'+id);
+    let cloud=null;
+    try{cloud=JSON.parse((g.files['oliveira-data.json']||{}).content||'null');}catch(e){cloud=null;}
+    const merged=mergeData(curData(),(cloud&&cloud.data)||{checks:{},word:{},custom:{},notes:{},admin:{}});
+    Object.assign(state,merged);
+    await pushCloud();
+  }catch(e){
+    s.status='同步失败：'+(e.message||e);
+    persistRaw();
+  }
+  render();
+}
+async function loginAction(){
+  const el=$('#pat');
+  const pat=el&&el.value||'';
+  if(!pat.trim())return;
+  const btn=$('#loginBtn');
+  if(btn)btn.textContent='登录中…';
+  try{
+    const r=await ghFetch('https://api.github.com/user',{headers:{'Authorization':'token '+pat.trim(),'Accept':'application/vnd.github+json'}});
+    if(!r.ok)throw new Error(r.status===401?'Token 无效或无权限（需勾选 gist）':'GitHub 请求失败 '+r.status);
+    const u=await r.json();
+    state.sync={token:pat.trim(),user:u.login||u.name||'github',gistId:null,auto:true,lastSync:0,status:'登录成功，正在同步…'};
+    persistRaw();
+    const id=await ensureGist();
+    const g=await ghApi('/gists/'+id);
+    let cloud=null;
+    try{cloud=JSON.parse((g.files['oliveira-data.json']||{}).content||'null');}catch(e){cloud=null;}
+    const merged=mergeData(curData(),(cloud&&cloud.data)||{checks:{},word:{},custom:{},notes:{},admin:{}});
+    Object.assign(state,merged);
+    state.sync.lastSync=Date.now();
+    await pushCloud();
+  }catch(e){
+    state.sync={token:'',user:'',gistId:null,auto:false,lastSync:0,status:'登录失败：'+(e.message||e)};
+    persistRaw();
+  }
+  render();
+}
+function scheduleSync(){
+  const s=state.sync||{};
+  if(!s.token||s.auto===false)return;
+  if(typeof navigator!=='undefined'&&navigator.onLine===false)return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>{pushCloud().catch(()=>{});},1500);
+}
 
 /* ================= 任务生成（每天自动更新） ================= */
 function engRitual(ds){
@@ -453,7 +624,8 @@ function engRitual(ds){
     if(SPORT.includes(s))continue;
     n++;
   }
-  return '英语仪式：新概念 2 第 '+n+' 课（听 3 遍 → 跟读 → 默写关键句）';
+  if(n>96)n=96;
+  return '英语仪式：新概念 2 第 '+n+' 课（听 3 遍 → 跟读 → 默写关键句）'+(n===96?' · 全册完成后自由回听':'');
 }
 function groupInfo(g){
   const dues=OFFS.map(o=>dstr(addDays(parse(g.start),o)));
@@ -614,34 +786,64 @@ function wordGrid(){
     +'<div class="muted">每天睡前 20 分钟完成「单词复习」任务即自动勾销到期组；逾期未复习的组会一直保留到今天，直到打卡为止。</div>';
 }
 
+/* ================= 时间分组 ================= */
+const SECTIONS=[
+  {k:'am',label:'🌅 上午 · 08:00–11:59',min:0,max:719},
+  {k:'pm',label:'☀️ 下午 · 12:00–17:59',min:720,max:1079},
+  {k:'eve',label:'🌙 晚上 · 18:00–21:59',min:1080,max:1319},
+  {k:'night',label:'🌠 睡前与习惯 · 22:00 后',min:1320,max:1440},
+];
+function taskMinute(t){
+  const m=String(t||'').match(/(\d{1,2}):(\d{2})/);
+  if(m)return (+m[1])*60+(+m[2]);
+  const s=String(t||'');
+  if(s.indexOf('睡前')>=0)return 1370;
+  if(s.indexOf('碎片')>=0)return 500;
+  if(s.indexOf('饭后')>=0)return 1150;
+  if(s.indexOf('全天')>=0)return 500;
+  if(s.indexOf('额外')>=0)return 1160;
+  if(s.indexOf('弹性')>=0)return 1170;
+  if(s.indexOf('考前')>=0)return 480;
+  if(s.indexOf('考后')>=0)return 780;
+  if(s.indexOf('上午')>=0)return 500;
+  return 950;
+}
+
 /* ================= 视图 ================= */
+function taskRow(t,c,ds){
+  const rec=c[t.id],open=noteOpen.has(ds+'|'+t.id);
+  const custom=t.id.indexOf('c')===0;
+  const noteHtml=open?'<textarea class="tnote" data-in="note|'+ds+'|'+t.id+'" placeholder="备注：分数、错因、心得…">'+esc(rec&&rec.note||'')+'</textarea>':'';
+  const timeHtml=rec&&rec.t?'<span>✓ '+new Date(rec.t).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' 完成</span>':'';
+  return '<div class="task'+(rec?' done':'')+'">'
+    +'<button class="chk" data-act="check|'+ds+'|'+t.id+'" title="打卡 / 撤销">✓</button>'
+    +'<div class="taskbody">'
+    +'<div class="taskx">'+esc(t.x)+' <span class="tag" style="color:'+SUB[t.s]+'">● '+t.s+'</span></div>'
+    +'<div class="taskmeta"><span>'+esc(t.t)+'</span><span>'+t.m+' 分钟</span>'+timeHtml
+    +'<button class="mini" data-act="note|'+ds+'|'+t.id+'">备注</button>'
+    +(custom?'<button class="mini del" data-act="del|'+ds+'|'+t.id+'">删除</button>':'')
+    +'</div>'+noteHtml+'</div></div>';
+}
 function viewToday(){
   const d=viewDate,ds=dstr(d),c=state.checks[ds]||{};
-  const tasks=tasksFor(d);
+  const tasks=tasksFor(d).slice().sort((a,b)=>taskMinute(a.t)-taskMinute(b.t));
   const done=tasks.filter(t=>c[t.id]).length;
   const pct=tasks.length?Math.round(done/tasks.length*100):0;
   const mins=tasks.reduce((a,t)=>c[t.id]?a+t.m:a,0);
   const hh=Math.floor(mins/60),mm=mins%60;
-  const rows=tasks.map(t=>{
-    const rec=c[t.id],open=noteOpen.has(ds+'|'+t.id);
-    const custom=t.id.indexOf('c')===0;
-    const noteHtml=open?'<textarea class="tnote" data-in="note|'+ds+'|'+t.id+'" placeholder="备注：分数、错因、心得…">'+esc(rec&&rec.note||'')+'</textarea>':'';
-    const timeHtml=rec&&rec.t?'<span>✓ '+new Date(rec.t).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' 完成</span>':'';
-    return '<div class="task'+(rec?' done':'')+'">'
-      +'<button class="chk" data-act="check|'+ds+'|'+t.id+'" title="打卡 / 撤销">✓</button>'
-      +'<div class="taskbody">'
-      +'<div class="taskx">'+esc(t.x)+' <span class="tag" style="color:'+SUB[t.s]+'">● '+t.s+'</span></div>'
-      +'<div class="taskmeta"><span>'+esc(t.t)+'</span><span>'+t.m+' 分钟</span>'+timeHtml
-      +'<button class="mini" data-act="note|'+ds+'|'+t.id+'">备注</button>'
-      +(custom?'<button class="mini del" data-act="del|'+ds+'|'+t.id+'">删除</button>':'')
-      +'</div>'+noteHtml+'</div></div>';
+  const body=SECTIONS.map(sec=>{
+    const list=tasks.filter(t=>{const m=taskMinute(t.t);return m>=sec.min&&m<=sec.max;});
+    if(!list.length)return '';
+    const dn=list.filter(t=>c[t.id]).length;
+    return '<div class="sect"><div class="secthead">'+sec.label+'<span>'+dn+' / '+list.length+' 项</span></div>'
+      +list.map(t=>taskRow(t,c,ds)).join('')+'</div>';
   }).join('');
   const empty=tasks.length?'':'<div class="muted">今天没有安排，休息也是计划的一部分 ☁️</div>';
   return bannerHTML(ds)
     +'<div class="row">'
     +'<div class="card ringcard"><div>'+ringSVG(pct)+'</div><div class="ringinfo"><b>今日完成 '+pct+'%</b><span>'+done+' / '+tasks.length+' 项 · 已投入 '+hh+'h '+mm+'m</span></div></div>'
-    +'<div class="card grow"><div class="cardtitle">今日任务<span class="dim">'+fmt(d)+' · '+WD[d.getDay()]+' · 第 '+weekNum(ds)+' 周</span></div>'
-    +'<div class="tasklist">'+rows+empty+'</div>'
+    +'<div class="card grow"><div class="cardtitle">今日任务<span class="dim">'+fmt(d)+' · '+WD[d.getDay()]+' · 第 '+weekNum(ds)+' 周 · 按时间排列</span></div>'
+    +'<div class="tasklist">'+body+empty+'</div>'
     +'<div class="addrow"><input id="newx" placeholder="添加自己的任务…（回车确认）">'
     +'<select id="news">'+SUB_ORDER.map(s=>'<option>'+s+'</option>').join('')+'</select>'
     +'<input id="newm" type="number" min="5" step="5" value="30" title="分钟">'
@@ -753,6 +955,36 @@ function viewStats(){
     +'<div class="card"><div class="cardtitle">近 7 天各科投入</div>'+subjBars(t7.mins)+'</div>'
     +'<div class="card">'+wordGrid()+'</div>';
 }
+function viewAccount(){
+  const s=state.sync||{};
+  if(!s.token){
+    return '<div class="card"><div class="cardtitle">账户登录<span class="dim">登录后数据随账号迁移到任何设备</span></div>'
+      +'<div class="acct">'
+      +'<div class="muted">登录后，打卡数据会同步到你的 <b>GitHub 私有 Gist</b>（云端私有笔记，只有你能访问）。在任何设备用同一账号登录，数据自动合并迁移。</div>'
+      +'<ol class="steps">'
+      +'<li>打开 <b>github.com/settings/tokens</b>（需能访问 GitHub）</li>'
+      +'<li>点 <b>Generate new token (classic)</b> → 只勾选 <b>gist</b> 一项 → 生成</li>'
+      +'<li>把 token（<b>ghp_</b> 开头）粘贴到下方，点「登录并同步」</li>'
+      +'</ol>'
+      +'<div class="patrow"><input id="pat" type="password" placeholder="ghp_xxxxxxxxxxxxxxxx" autocomplete="off"><button class="primary" id="loginBtn" data-act="login">登录并同步</button></div>'
+      +'<div class="muted">token 只保存在本机浏览器，仅用于读写你自己的 gist；随时可在 GitHub 设置里撤销。建议新建专属 token，不要使用大权限 token。</div>'
+      +'<div class="muted">不登录也能用：数据保存在本地，「导出 / 导入数据」手动迁移。</div>'
+      +'</div></div>';
+  }
+  const isErr=(s.status||'').indexOf('失败')>=0;
+  const isBusy=(s.status||'').indexOf('中')>=0;
+  const txt=isErr||isBusy?s.status:(s.lastSync?'已同步':'未同步');
+  const cls=isErr?'err':(isBusy?'':'ok');
+  const initial=String(s.user||'o').slice(0,1).toUpperCase();
+  return '<div class="card"><div class="cardtitle">账户与云同步</div><div class="acct">'
+    +'<div class="avrow"><div class="av">'+initial+'</div><div><b>@'+esc(s.user||'github')+'</b><div class="dim">已登录 GitHub 账号</div></div>'
+    +'<span class="status '+cls+'">● '+esc(txt)+'</span></div>'
+    +'<div class="muted">上次同步：'+(s.lastSync?new Date(s.lastSync).toLocaleString('zh-CN',{hour12:false}):'尚未同步')+' · 云端文件：'+GIST_DESC+'（私有 Gist）</div>'
+    +'<label class="dim" style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" '+(s.auto===false?'':'checked')+' data-act="autosync"> 每次打卡后自动同步到云端</label>'
+    +'<div class="adminbtns"><button class="primary" data-act="syncnow">🔄 立即同步（与云端合并）</button><button class="ghost" data-act="logout">🚪 退出登录</button></div>'
+    +'<div class="muted">在其他设备登录同一账号 → 数据自动合并。换新设备时建议先点「立即同步」。</div>'
+    +'</div></div>';
+}
 function viewPlan(){
   const ts=dstr(new Date());
   const evs=EVENTS.map(e=>{
@@ -768,11 +1000,11 @@ function viewPlan(){
     +'<div class="goal"><b>MIT</b><span>长期</span><i>寒假 8.01 / CS106B 先修</i></div>'
     +'</div></div>'
     +'<div class="card"><div class="cardtitle">按真实课表优化的每周节奏</div>'
-    +'<table class="grid"><tr><th></th><th>周一</th><th>周二</th><th>周三</th><th>周四</th><th>周五</th><th>周六</th><th>周日</th></tr>'
+    +'<div class="gridwrap"><table class="grid"><tr><th></th><th>周一</th><th>周二</th><th>周三</th><th>周四</th><th>周五</th><th>周六</th><th>周日</th></tr>'
     +'<tr><td>上午</td><td>高数整块</td><td>高数早读 + 英语正课</td><td>C++ 正课 + 高数</td><td>高数预习</td><td>高数真题整块</td><td>高数模拟</td><td>线代模拟</td></tr>'
     +'<tr><td>下午</td><td>体育 + 思修</td><td>VR 导论（3 节连排）</td><td><b>自由块</b>（形策 13 周起）</td><td>高数正课 + 整理</td><td>思修 + 高数机动</td><td>错题精修</td><td>周清</td></tr>'
     +'<tr><td>晚上</td><td>C++ 正课 + 高数</td><td>线代正课 + C++ 刷题</td><td>心理课（至 11 周）+ 线代</td><td>线代正课 + C++</td><td>高数正课 + 线代半卷</td><td>弹性块</td><td>收尾</td></tr>'
-    +'<tr><td>睡前</td><td colspan="7">英语仪式（新 2 + 百词斩 + 单词复习），雷打不动</td></tr></table>'
+    +'<tr><td>睡前</td><td colspan="7">英语仪式（新 2 + 百词斩 + 单词复习），雷打不动</td></tr></table></div>'
     +'<h4>按课表联动的优化点</h4>'
     +'<div class="rule"><b>1</b><p>周一晚 C++ 正课 → 课后 20:15–22:00 自习转高数，不重复学 C++；上午整块高数。</p></div>'
     +'<div class="rule"><b>2</b><p>周二排满英语 / VR / 线代三课：早 8 点高数早读 1.5h，晚课后 20:15–22:00 清 C++ 作业（周三早课前交差）。</p></div>'
@@ -817,7 +1049,7 @@ function viewPlan(){
     +'<div class="muted"><b>物理</b>：王稼军《大学物理》MOOC（校内衔接）→ MIT 8.01 Lewin（寒假）→ 8.02 / 8.03</div>'
     +'<div class="muted"><b>英语</b>：新概念 2 每日 1 课 + 百词斩 3500 + 艾宾浩斯 227 词表（11.18 清零）</div></div>'
     +'<div class="card"><div class="cardtitle">数据管理</div>'
-    +'<div class="muted">数据保存在本浏览器 localStorage 中，不会上传。换电脑/清缓存前请先导出。</div>'
+    +'<div class="muted">数据保存在本浏览器 localStorage；在「账户」页登录 GitHub 后可自动同步到云端私有 Gist，换设备登录同一账号即恢复。导出 JSON 可手动备份 / 迁移。</div>'
     +'<div class="adminbtns"><button class="ghost" data-act="export">⬇ 导出数据（JSON）</button><button class="ghost" data-act="import">⬆ 导入数据</button><button class="ghost" data-act="reset">🗑 清空数据</button></div></div>';
 }
 
@@ -840,7 +1072,7 @@ function addCustomFromForm(){
   const s=$('#news').value,m=Math.max(5,parseInt($('#newm').value,10)||30);
   const ds=dstr(viewDate);
   state.custom[ds]=state.custom[ds]||[];
-  state.custom[ds].push({id:'c'+Date.now()+Math.floor(Math.random()*1000),x,s,m});
+  state.custom[ds].push({id:'c'+Date.now()+Math.floor(Math.random()*1000),x,s,m,ts:Date.now()});
   $('#newx').value='';
   save();render();
   const nx=$('#newx');if(nx)nx.focus();
@@ -851,7 +1083,9 @@ function adminAdj(n){
   save();render();
 }
 function exportData(){
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const s=state.sync;
+  const out=Object.assign({},state,{sync:s?{user:s.user,gistId:s.gistId,auto:s.auto,lastSync:s.lastSync,status:s.status}:null});
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download='oliveira-数据-'+dstr(new Date())+'.json';
@@ -871,7 +1105,7 @@ function render(){
   $('#streakN').textContent=streak();
   $('#brandWeek').textContent=TERM+' · 第 '+weekNum(ds)+' 周';
   $('#chips').innerHTML=chipsHTML();
-  const V={today:viewToday,tt:viewTimetable,week:viewWeek,stats:viewStats,plan:viewPlan}[tab];
+  const V={today:viewToday,tt:viewTimetable,week:viewWeek,stats:viewStats,plan:viewPlan,acct:viewAccount}[tab];
   $('#view').innerHTML=V();
 }
 
@@ -892,6 +1126,10 @@ document.addEventListener('click',e=>{
   else if(act==='theme'){state.dark=!state.dark;save();render();}
   else if(act==='export'){exportData();}
   else if(act==='import'){document.getElementById('imp').click();}
+  else if(act==='login'){loginAction();}
+  else if(act==='syncnow'){syncNow();}
+  else if(act==='autosync'){const s=state.sync||{};s.auto=s.auto===false;state.sync=s;save();render();}
+  else if(act==='logout'){state.sync=null;save();render();}
   else if(act==='reset'){
     if(confirm('确定清空所有打卡数据？此操作不可恢复，建议先导出备份。')){
       localStorage.removeItem(LS);
@@ -913,6 +1151,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target&&e.target.id==='newx')addCustomFromForm();
+  if(e.key==='Enter'&&e.target&&e.target.id==='pat')loginAction();
 });
 document.getElementById('imp').addEventListener('change',e=>{
   const f=e.target.files[0];
@@ -921,7 +1160,7 @@ document.getElementById('imp').addEventListener('change',e=>{
   r.onload=()=>{
     try{
       const o=JSON.parse(r.result);
-      state=Object.assign({checks:{},word:{},custom:{},notes:{},admin:{},dark:state.dark},o);
+      state=Object.assign({checks:{},word:{},custom:{},notes:{},admin:{},dark:state.dark},o,{sync:state.sync||null});
       save();render();
     }catch(err){alert('导入失败：文件格式不正确。');}
   };
