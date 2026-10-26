@@ -104,6 +104,13 @@ h4{margin:18px 0 8px;font-size:14px}
 .mini{background:none;border:0;color:var(--sub);font-size:12px;padding:0;text-decoration:underline dotted}
 .mini:hover{color:var(--accent)}
 .mini.del:hover{color:#ef4444}
+.task.inc .taskx{color:var(--amber-tx)}
+.task.inc .chk{border-color:#fcd34d}
+.longrow{padding:8px 0;border-bottom:1px dashed var(--line)}
+.longrow:last-of-type{border-bottom:0}
+.longtop{display:flex;gap:10px;align-items:center}
+.longtop b{font-size:14px}
+.longtop .mini{margin-left:auto}
 .tnote{width:100%;margin-top:8px;font-size:13px}
 .addrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .addrow #newx{flex:1;min-width:150px}
@@ -206,7 +213,7 @@ tr.nowp td.pt b,tr.nowp td.pt small{color:var(--accent)}
 .goal span{font-size:20px;font-weight:700;color:var(--accent)}
 .goal i{font-style:normal;font-size:11.5px;color:var(--sub);display:block;margin-top:2px}
 .rule{display:flex;gap:10px;padding:8px 0;align-items:flex-start}
-.rule b{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
+.rule>b{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
 .rule p{margin:0;font-size:13.5px}
 table.grid{width:100%;border-collapse:collapse;font-size:13px}
 table.grid th,table.grid td{border:1px solid var(--line);padding:8px 10px;text-align:center}
@@ -485,6 +492,9 @@ function persistRaw(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e
 function save(){persistRaw();scheduleSync();}
 let state=load()||{checks:{},word:{},custom:{},notes:{},admin:{},dark:false};
 if(!state.sync)state.sync=null;
+if(!state.roll)state.roll=[];
+if(!state.long)state.long=[];
+if(!state.toast)state.toast=null;
 let viewDate=new Date();
 let tab='today';
 let syncTimer=null;
@@ -517,7 +527,7 @@ async function ensureGist(){
   s.gistId=created.id;persistRaw();return created.id;
 }
 function mergeData(a,b){
-  const out={checks:{},word:{},custom:{},notes:{},admin:{}};
+  const out={checks:{},word:{},custom:{},notes:{},admin:{},roll:[],long:[]};
   const d1=a.checks||{},d2=b.checks||{};
   new Set([...Object.keys(d1),...Object.keys(d2)]).forEach(ds=>{
     out.checks[ds]={};
@@ -543,9 +553,15 @@ function mergeData(a,b){
   new Set([...Object.keys(a.admin||{}),...Object.keys(b.admin||{})]).forEach(wk=>{
     out.admin[wk]=Math.max(a.admin[wk]||0,b.admin[wk]||0);
   });
+  ((a.roll||[]).concat(b.roll||[])).forEach(r=>{
+    if(!out.roll.some(x=>x.id===r.id))out.roll.push(r);
+  });
+  ((a.long||[]).concat(b.long||[])).forEach(l=>{
+    if(!out.long.some(x=>x.id===l.id))out.long.push(l);
+  });
   return out;
 }
-function curData(){return {checks:state.checks,word:state.word,custom:state.custom,notes:state.notes,admin:state.admin};}
+function curData(){return {checks:state.checks,word:state.word,custom:state.custom,notes:state.notes,admin:state.admin,roll:state.roll||[],long:state.long||[]};}
 async function pushCloud(){
   const s=state.sync||{};
   if(!s.token)return;
@@ -695,12 +711,22 @@ function tasksFor(d){
       out.push({id:'fin',t:'弹性 3h',x:'期末复习冲刺：真题 + 错题本（按考试安排调整）',s:'综合',m:180});
     }
   }
-  (state.custom[ds]||[]).forEach(c=>out.push({id:c.id,t:'自定义',x:c.x,s:c.s,m:c.m}));
+  if(!isSport){
+    (state.long||[]).forEach(l=>{
+      const m=longMins(l,ds);
+      if(m>0)out.push({id:'long'+l.id,t:'📌 长期',x:l.name+' · '+m+' 分钟',s:l.s,m:m,longId:l.id});
+    });
+  }
+  (state.roll||[]).forEach(r=>{
+    if(r.target===ds)out.push({id:r.id,t:'🔁 '+(r.t0||'补做'),x:r.x,s:r.s,m:r.m,rollId:r.id});
+  });
+  (state.custom[ds]||[]).forEach(c=>out.push({id:c.id,t:'自定义 · '+(c.slot||'随时'),x:c.x,s:c.s,m:c.m}));
   return out;
 }
+const isDone=(c,id)=>{const r=c[id];return !!r&&!r.inc;};
 function hasAnyDone(ds){
   const c=state.checks[ds]||{};
-  return tasksFor(parse(ds)).some(t=>c[t.id]);
+  return tasksFor(parse(ds)).some(t=>isDone(c,t.id));
 }
 function streak(){
   let d=new Date();
@@ -714,7 +740,7 @@ function totalsBetween(a,b){
   for(let d=parse(a);dstr(d)<=b;d=addDays(d,1)){
     const ds=dstr(d),ts=tasksFor(d),c=state.checks[ds]||{};
     r.taskCount+=ts.length;
-    ts.forEach(t=>{if(c[t.id]){r.doneCount++;r.total+=t.m;mins[t.s]=(mins[t.s]||0)+t.m;}});
+    ts.forEach(t=>{if(isDone(c,t.id)){r.doneCount++;r.total+=t.m;mins[t.s]=(mins[t.s]||0)+t.m;}});
   }
   return r;
 }
@@ -738,6 +764,10 @@ function bannerHTML(ds){
   if(ds<PLAN_START)arr.push('<div class="banner event"><span>计划将于 10.20 正式启动，现在可以先添加自定义任务热身。</span></div>');
   if(d.getDay()===6&&!SPORT.includes(ds)&&!EXAM.includes(ds)&&weekNum(ds)<=9)
     arr.push('<div class="banner warn"><span>今天是高数模拟日：分数 &lt;80 将触发 B 计划（晚自习全转高数 + 每天加练 1h 错题）。</span></div>');
+  const tst=state.toast;
+  if(tst&&tst.ds===ds)arr.push('<div class="banner event"><span>'+esc(tst.text)+'</span></div>');
+  const rollN=(state.roll||[]).filter(r=>r.target===ds).length;
+  if(rollN)arr.push('<div class="banner proj"><span>🔁 今天有 '+rollN+' 项补做任务（未完成自动顺延而来）</span></div>');
   return arr.join('');
 }
 
@@ -762,7 +792,7 @@ function bars7(){
   const now=new Date(),ts0=dstr(now),arr=[];
   for(let i=6;i>=0;i--){
     const d=addDays(now,-i),ds=dstr(d),ts=tasksFor(d),c=state.checks[ds]||{};
-    const done=ts.filter(t=>c[t.id]).length;
+    const done=ts.filter(t=>isDone(c,t.id)).length;
     const pct=ts.length?Math.round(done/ts.length*100):0;
     arr.push({d,ds,pct});
   }
@@ -786,6 +816,73 @@ function wordGrid(){
     +'<div class="muted">每天睡前 20 分钟完成「单词复习」任务即自动勾销到期组；逾期未复习的组会一直保留到今天，直到打卡为止。</div>';
 }
 
+/* ================= 长期计划与任务顺延 ================= */
+const BUDGET=780;
+function planMinutes(ds){
+  return tasksFor(parse(ds)).reduce((a,t)=>a+t.m,0);
+}
+function allocTarget(afterDs){
+  const todayStr=dstr(new Date());
+  let base=afterDs>todayStr?parse(afterDs):new Date();
+  (state.roll||[]).forEach(r=>{if(r.target&&r.target>dstr(base))base=parse(r.target);});
+  let d=addDays(base,1);
+  for(let i=0;i<90;i++){
+    const ds=dstr(d);
+    if(!SPORT.includes(ds)&&!EXAM.includes(ds))return ds;
+    d=addDays(d,1);
+  }
+  return dstr(d);
+}
+function rollInfo(ds,id){
+  return (state.roll||[]).find(r=>r.origin===id&&r.originDs===ds)||null;
+}
+function markIncomplete(ds,id){
+  const t=tasksFor(parse(ds)).find(x=>x.id===id);
+  if(!t)return;
+  const c=state.checks[ds]=state.checks[ds]||{};
+  if(c[id]&&c[id].inc){
+    delete c[id].inc;
+    state.roll=(state.roll||[]).filter(r=>!(r.origin===id&&r.originDs===ds));
+  }else{
+    c[id]=Object.assign({},c[id]||{}, {inc:true});
+    if(id.indexOf('roll_')===0){
+      const old=(state.roll||[]).find(r=>r.id===id);
+      state.roll=(state.roll||[]).filter(r=>r.id!==id);
+      state.roll.push({id:'roll_'+Date.now()+Math.floor(Math.random()*1000),x:t.x,s:t.s,m:t.m,t0:(old&&old.t0)||t.t.replace(/^🔁 /,''),from:ds,target:allocTarget(ds)});
+      delete c[id];
+    }else{
+      state.roll.push({id:'roll_'+Date.now()+Math.floor(Math.random()*1000),x:t.x,s:t.s,m:t.m,t0:t.t,from:ds,target:allocTarget(ds),origin:id,originDs:ds});
+    }
+  }
+  save();render();
+}
+function longMins(l,ds){
+  if(l.start&&ds<l.start)return 0;
+  if(l.deadline&&ds>l.deadline)return 0;
+  if(l.weeklyMinutes)return Math.max(0,Math.round(l.weeklyMinutes/7));
+  if(l.totalMinutes&&l.deadline){
+    const today=dstr(new Date());
+    const baseDs=ds>today?ds:today;
+    const days=Math.max(1,diffDays(baseDs,l.deadline)+1);
+    const remain=Math.max(0,l.totalMinutes-(l.done||0));
+    return Math.min(180,Math.max(15,Math.round(remain/days)));
+  }
+  return 30;
+}
+function addLongFromForm(){
+  const nameEl=$('#longname');
+  const name=nameEl&&nameEl.value.trim()||'';
+  if(!name)return;
+  const s=($('#longs')&&$('#longs').value)||'综合';
+  let w=parseInt(($('#longw')&&$('#longw').value)||0,10)||0;
+  const total=parseInt(($('#longt')&&$('#longt').value)||0,10)||0;
+  const dl=($('#longdl')&&$('#longdl').value)||'';
+  if(!w&&!total)w=210;
+  state.long=(state.long||[]);
+  state.long.push({id:'l'+Date.now()+Math.floor(Math.random()*1000),name,s,weeklyMinutes:w,totalMinutes:total,deadline:dl||null,start:dstr(new Date()),done:0,ts:Date.now()});
+  save();render();
+}
+
 /* ================= 时间分组 ================= */
 const SECTIONS=[
   {k:'am',label:'🌅 上午 · 08:00–11:59',min:0,max:719},
@@ -805,6 +902,8 @@ function taskMinute(t){
   if(s.indexOf('弹性')>=0)return 1170;
   if(s.indexOf('考前')>=0)return 480;
   if(s.indexOf('考后')>=0)return 780;
+  if(s.indexOf('下午')>=0)return 840;
+  if(s.indexOf('晚上')>=0)return 1150;
   if(s.indexOf('上午')>=0)return 500;
   return 950;
 }
@@ -813,28 +912,33 @@ function taskMinute(t){
 function taskRow(t,c,ds){
   const rec=c[t.id],open=noteOpen.has(ds+'|'+t.id);
   const custom=t.id.indexOf('c')===0;
+  const rolled=t.id.indexOf('roll_')===0;
+  const rin=rec&&rec.inc?rollInfo(ds,t.id):null;
+  const doneCls=rec&&!rec.inc;
   const noteHtml=open?'<textarea class="tnote" data-in="note|'+ds+'|'+t.id+'" placeholder="备注：分数、错因、心得…">'+esc(rec&&rec.note||'')+'</textarea>':'';
-  const timeHtml=rec&&rec.t?'<span>✓ '+new Date(rec.t).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' 完成</span>':'';
-  return '<div class="task'+(rec?' done':'')+'">'
+  const timeHtml=doneCls?'<span>✓ '+new Date(rec.t).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' 完成</span>':'';
+  const incHtml=rec&&rec.inc?'<span style="color:var(--amber-tx)">⏳ 未完成 · 已顺延至 '+(rin?rin.target.slice(5).replace('-','/'):'后续日期')+'</span>':'';
+  return '<div class="task'+(doneCls?' done':'')+(rec&&rec.inc?' inc':'')+'">'
     +'<button class="chk" data-act="check|'+ds+'|'+t.id+'" title="打卡 / 撤销">✓</button>'
     +'<div class="taskbody">'
-    +'<div class="taskx">'+esc(t.x)+' <span class="tag" style="color:'+SUB[t.s]+'">● '+t.s+'</span></div>'
-    +'<div class="taskmeta"><span>'+esc(t.t)+'</span><span>'+t.m+' 分钟</span>'+timeHtml
+    +'<div class="taskx">'+esc(t.x)+' <span class="tag" style="color:'+SUB[t.s]+'">● '+t.s+(rolled?' · 补':'')+'</span></div>'
+    +'<div class="taskmeta"><span>'+esc(t.t)+'</span><span>'+t.m+' 分钟</span>'+timeHtml+incHtml
     +'<button class="mini" data-act="note|'+ds+'|'+t.id+'">备注</button>'
+    +'<button class="mini" data-act="inc|'+ds+'|'+t.id+'">'+(rec&&rec.inc?'取消顺延':'未完成')+'</button>'
     +(custom?'<button class="mini del" data-act="del|'+ds+'|'+t.id+'">删除</button>':'')
     +'</div>'+noteHtml+'</div></div>';
 }
 function viewToday(){
   const d=viewDate,ds=dstr(d),c=state.checks[ds]||{};
   const tasks=tasksFor(d).slice().sort((a,b)=>taskMinute(a.t)-taskMinute(b.t));
-  const done=tasks.filter(t=>c[t.id]).length;
+  const done=tasks.filter(t=>isDone(c,t.id)).length;
   const pct=tasks.length?Math.round(done/tasks.length*100):0;
-  const mins=tasks.reduce((a,t)=>c[t.id]?a+t.m:a,0);
+  const mins=tasks.reduce((a,t)=>isDone(c,t.id)?a+t.m:a,0);
   const hh=Math.floor(mins/60),mm=mins%60;
   const body=SECTIONS.map(sec=>{
     const list=tasks.filter(t=>{const m=taskMinute(t.t);return m>=sec.min&&m<=sec.max;});
     if(!list.length)return '';
-    const dn=list.filter(t=>c[t.id]).length;
+    const dn=list.filter(t=>isDone(c,t.id)).length;
     return '<div class="sect"><div class="secthead">'+sec.label+'<span>'+dn+' / '+list.length+' 项</span></div>'
       +list.map(t=>taskRow(t,c,ds)).join('')+'</div>';
   }).join('');
@@ -846,6 +950,7 @@ function viewToday(){
     +'<div class="tasklist">'+body+empty+'</div>'
     +'<div class="addrow"><input id="newx" placeholder="添加自己的任务…（回车确认）">'
     +'<select id="news">'+SUB_ORDER.map(s=>'<option>'+s+'</option>').join('')+'</select>'
+    +'<select id="newslot">'+['随时','上午','下午','晚上','睡前'].map(s=>'<option>'+s+'</option>').join('')+'</select>'
     +'<input id="newm" type="number" min="5" step="5" value="30" title="分钟">'
     +'<button class="primary" data-act="add">＋ 添加</button></div>'
     +'<div class="summary"><span>今日小结（每日复盘）</span><textarea data-in="summary|'+ds+'" placeholder="今天学得怎么样？记一笔…">'+esc(state.notes[ds]||'')+'</textarea></div>'
@@ -910,7 +1015,7 @@ function viewWeek(){
   const now=new Date(),mon=mondayOf(now);
   const days=[0,1,2,3,4,5,6].map(i=>{
     const d=addDays(mon,i),ds=dstr(d),ts=tasksFor(d),c=state.checks[ds]||{};
-    const done=ts.filter(t=>c[t.id]).length,pct=ts.length?Math.round(done/ts.length*100):0;
+    const done=ts.filter(t=>isDone(c,t.id)).length,pct=ts.length?Math.round(done/ts.length*100):0;
     return {d,ds,done,total:ts.length,pct,isToday:ds===dstr(now)};
   });
   const wk=weekKey(now);
@@ -943,7 +1048,7 @@ function viewStats(){
   let words=0;
   for(let d=parse(PLAN_START);dstr(d)<=ts;d=addDays(d,1)){
     const c=state.checks[dstr(d)]||{};
-    if(c['r0'])words+=50;
+    if(isDone(c,'r0'))words+=50;
   }
   const t7=totalsBetween(dstr(addDays(now,-6)),ts);
   return '<div class="statgrid">'
@@ -985,6 +1090,29 @@ function viewAccount(){
     +'<div class="muted">在其他设备登录同一账号 → 数据自动合并。换新设备时建议先点「立即同步」。</div>'
     +'</div></div>';
 }
+function longPlansHTML(){
+  const list=state.long||[];
+  const rows=list.map(l=>{
+    let sub,bar='';
+    if(l.totalMinutes){
+      const pct=Math.min(100,Math.round((l.done||0)/l.totalMinutes*100));
+      sub='总时长 '+(l.totalMinutes/60).toFixed(1)+'h · 已完成 '+Math.round((l.done||0)/60)+'m（'+pct+'%）'+(l.deadline?' · 截止 '+l.deadline:'');
+      bar='<div class="bar"><i style="width:'+pct+'%"></i></div>';
+    }else{
+      sub='每周 '+(l.weeklyMinutes/60).toFixed(1)+'h · 均匀分配到每天';
+    }
+    return '<div class="longrow"><div class="longtop"><b>'+esc(l.name)+'</b><span class="tag" style="color:'+SUB[l.s]+'">● '+l.s+'</span><button class="mini del" data-act="dellong|'+l.id+'">删除</button></div>'
+      +'<div class="dim" style="font-size:12px">'+sub+'</div>'+bar+'</div>';
+  }).join('')||'<div class="muted">还没有长期计划。例如：「物理·王稼军力学」每周 3.5h，或「MIT 8.01 先修」总 60h 截止 1.15。</div>';
+  return '<div class="card"><div class="cardtitle">长期计划<span class="dim">自动分配到每一天</span></div>'+rows
+    +'<div class="addrow"><input id="longname" placeholder="名称，如：物理·王稼军力学">'
+    +'<select id="longs">'+SUB_ORDER.map(s=>'<option>'+s+'</option>').join('')+'</select>'
+    +'<input id="longw" type="number" min="0" placeholder="每周分钟" style="width:90px">'
+    +'<input id="longt" type="number" min="0" placeholder="总分钟" style="width:84px">'
+    +'<input id="longdl" type="date" title="截止日期">'
+    +'<button class="primary" data-act="addlong">＋ 添加</button></div>'
+    +'<div class="muted">两种分配方式：①填「每周分钟」→ 均分到每天；②填「总分钟 + 截止日期」→ 按剩余天数自动算出每天配额。任务会自动出现在「今日」列表并计入各科统计。</div></div>';
+}
 function viewPlan(){
   const ts=dstr(new Date());
   const evs=EVENTS.map(e=>{
@@ -999,6 +1127,7 @@ function viewPlan(){
     +'<div class="goal"><b>物理</b><span>衔接</span><i>王稼军力学 → MIT 8.01</i></div>'
     +'<div class="goal"><b>MIT</b><span>长期</span><i>寒假 8.01 / CS106B 先修</i></div>'
     +'</div></div>'
+    +longPlansHTML()
     +'<div class="card"><div class="cardtitle">按真实课表优化的每周节奏</div>'
     +'<div class="gridwrap"><table class="grid"><tr><th></th><th>周一</th><th>周二</th><th>周三</th><th>周四</th><th>周五</th><th>周六</th><th>周日</th></tr>'
     +'<tr><td>上午</td><td>高数整块</td><td>高数早读 + 英语正课</td><td>C++ 正课 + 高数</td><td>高数预习</td><td>高数真题整块</td><td>高数模拟</td><td>线代模拟</td></tr>'
@@ -1056,8 +1185,34 @@ function viewPlan(){
 /* ================= 动作 ================= */
 function toggle(ds,id){
   const c=state.checks[ds]=state.checks[ds]||{};
-  if(c[id]){delete c[id];}
-  else{c[id]={t:Date.now(),note:''};if(id==='word')markWord(ds);}
+  const rec=c[id];
+  if(rec){
+    if(rec.inc){
+      state.roll=(state.roll||[]).filter(r=>!(r.origin===id&&r.originDs===ds));
+      delete rec.inc;
+    }
+    if(id.indexOf('long')===0){
+      const l=(state.long||[]).find(x=>'long'+x.id===id);
+      const t=tasksFor(parse(ds)).find(x=>x.id===id);
+      if(l)l.done=Math.max(0,(l.done||0)-(t?t.m:0));
+    }
+    delete c[id];
+    if(id.indexOf('roll_')===0){
+      const r=(state.roll||[]).find(x=>x.id===id);
+      if(r)r.target=ds;
+    }
+  }else{
+    c[id]={t:Date.now(),note:''};
+    if(id==='word')markWord(ds);
+    if(id.indexOf('roll_')===0){
+      state.roll=(state.roll||[]).filter(x=>x.id!==id);
+    }
+    if(id.indexOf('long')===0){
+      const l=(state.long||[]).find(x=>'long'+x.id===id);
+      const t=tasksFor(parse(ds)).find(x=>x.id===id);
+      if(l)l.done=(l.done||0)+(t?t.m:0);
+    }
+  }
   save();render();
 }
 function delCustom(ds,id){
@@ -1069,10 +1224,16 @@ function delCustom(ds,id){
 function addCustomFromForm(){
   const x=$('#newx').value.trim();
   if(!x)return;
-  const s=$('#news').value,m=Math.max(5,parseInt($('#newm').value,10)||30);
+  const s=$('#news').value,slot=($('#newslot')&&$('#newslot').value)||'随时';
+  const m=Math.max(5,parseInt($('#newm').value,10)||30);
   const ds=dstr(viewDate);
-  state.custom[ds]=state.custom[ds]||[];
-  state.custom[ds].push({id:'c'+Date.now()+Math.floor(Math.random()*1000),x,s,m,ts:Date.now()});
+  let targetDs=ds;
+  if(planMinutes(ds)+m>BUDGET){
+    targetDs=allocTarget(ds);
+    state.toast={ds:targetDs,text:'今日计划已排满（超过 '+Math.round(BUDGET/60)+' 小时），「'+x.slice(0,14)+'」已自动顺延至 '+targetDs.slice(5).replace('-','/')};
+  }
+  state.custom[targetDs]=state.custom[targetDs]||[];
+  state.custom[targetDs].push({id:'c'+Date.now()+Math.floor(Math.random()*1000),x,s,m,slot,ts:Date.now()});
   $('#newx').value='';
   save();render();
   const nx=$('#newx');if(nx)nx.focus();
@@ -1122,6 +1283,9 @@ document.addEventListener('click',e=>{
   else if(act==='note'){const k=p[1]+'|'+p[2];noteOpen.has(k)?noteOpen.delete(k):noteOpen.add(k);render();}
   else if(act==='del'){delCustom(p[1],p[2]);}
   else if(act==='add'){addCustomFromForm();}
+  else if(act==='inc'){markIncomplete(p[1],p[2]);}
+  else if(act==='addlong'){addLongFromForm();}
+  else if(act==='dellong'){state.long=(state.long||[]).filter(l=>l.id!==p[1]);save();render();}
   else if(act==='admin'){adminAdj(+p[1]);}
   else if(act==='theme'){state.dark=!state.dark;save();render();}
   else if(act==='export'){exportData();}
@@ -1152,6 +1316,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target&&e.target.id==='newx')addCustomFromForm();
   if(e.key==='Enter'&&e.target&&e.target.id==='pat')loginAction();
+  if(e.key==='Enter'&&e.target&&e.target.id==='longname')addLongFromForm();
 });
 document.getElementById('imp').addEventListener('change',e=>{
   const f=e.target.files[0];
